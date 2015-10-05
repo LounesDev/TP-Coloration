@@ -7,17 +7,124 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class PictureColoring {
 	
+	public void trys()
+	{
+		Set s = makeSet(0);
+		Set s2 = makeSet(0);
+		System.out.println(s);
+		System.out.println(s2);
+		
+		union(s, s2);
+		
+		System.out.println(s.printList());
+	}
+	
+	public void colorPicture(String path)
+	{
+		try {
+			
+			int[][] pixels = read(path);
+			for (int i = 0; i < pixels.length; i++) {
+				for (int j = 0; j < pixels[0].length; j++) {
+					System.out.print(pixels[i][j]);
+				}
+				System.out.println();
+			}
+			
+			Set[][] pixelsSets = convertToSets(pixels);
+			
+
+			for (int i = 0; i < pixelsSets.length; i++) {
+				for (int j = 0; j < pixelsSets[0].length; j++) {
+					System.out.print(pixelsSets[i][j]);
+				}
+				System.out.println();
+			}
+			System.out.println();
+			
+			for(int i = 0; i < pixelsSets.length; i++) {
+				for(int j = 0; j < pixelsSets[0].length; j++) {
+					System.out.println("[" + i + "][" + j + "]");
+					if(!pixelsSets[i][j].isBlack())
+					{
+						ArrayList<Set> surroundings = getSurroundings(pixelsSets, i, j);
+						System.out.println(surroundings.size() + " neighbors");
+						for(Set neighbor : surroundings)
+						{	
+							System.out.println(neighbor);
+							if(neighbor != null && !neighbor.isBlack())
+							{
+								if(findSet(pixelsSets[i][j]) != findSet(neighbor))
+								{
+									union(pixelsSets[i][j], neighbor);
+								}
+							}
+						}
+					}										
+				}
+			}
+			
+			
+		} catch (FileFormatException e) {}
+	}
+	
+	public ArrayList<Set> getSurroundings(Set[][] pixelsSet, int x, int y)
+	{
+		ArrayList<Set> surroundings = new ArrayList<Set>();
+		
+		if(x - 1 >= 0 && !pixelsSet[x - 1][y].isBlack())
+		{
+			surroundings.add(pixelsSet[x - 1][y]);
+		}
+		
+		if(x + 1 <= pixelsSet.length - 1 && !pixelsSet[x + 1][y].isBlack())
+		{
+			surroundings.add(pixelsSet[x + 1][y]);
+		} 
+		
+		if(y - 1 >= 0 && !pixelsSet[x][y - 1].isBlack())
+		{
+			surroundings.add(pixelsSet[x][y - 1]);
+		}
+		
+		if(y + 1 <= pixelsSet[0].length - 1 && !pixelsSet[x][y + 1].isBlack())
+		{
+			surroundings.add(pixelsSet[x][y + 1]);
+		}
+		
+		return surroundings;
+	}
+	
+	public Set[][] convertToSets(int[][] pixels)
+	{
+		Set[][] sets = new Set[pixels.length][pixels[0].length];
+		
+		for (int i = 0; i < sets.length; i++) {
+			for (int j = 0; j < sets[0].length; j++) {
+				sets[i][j] = makeSet(pixels[i][j]);
+			}
+		}
+		
+		return sets;
+	}
+
 	public int[][] read(String path) throws FileFormatException
 	{
 		//File variables
 		BufferedReader in = null;
 		File pictureFile = new File(path);
+		
+		if(!pictureFile.exists())
+		{
+			throw new FileFormatException("No file at : " + path);
+		}
 		
 		if(!isValid("pbm", pictureFile))
 		{
@@ -45,19 +152,13 @@ public class PictureColoring {
 			{
 				for(int i = 0; i < line.length(); i++)
 				{
-
-					if(rows > dimensions.getRows() - 1)
-					{
-						break;
-					}
-					
 					pixels[rows][columns] = Character.getNumericValue(line.charAt(i));
 					columns++;
 					
-					if(columns == dimensions.getColumns() - 1)
+					if(columns == pixels[0].length)
 					{
-						columns = 0;
 						rows++;
+						columns = 0;
 					}
 					
 				}
@@ -142,6 +243,52 @@ public class PictureColoring {
 		
 		write(false, pixels, path);
 		
+	}
+	
+	public Set makeSet(int pixel)
+	{
+		return new Set(pixel);
+	}
+	
+	public Set findSet(Set set)
+	{
+		return set.getHead();
+	}
+	
+	public void union(Set s1, Set s2)
+	{
+		//Lier le tail de s1 vers s2
+		s1.getTail().setNext(s2.getHead());
+		s2.getTail().setNext(null);
+		
+		//Lier tous les tails (de s1) vers le tail de s2
+		Set current = s1.getHead();
+		while(current != null)
+		{
+			current.setTail(s2.getTail());
+			current = current.getNext();
+		}
+		
+		//Lier tous heads (de s2) vers la head de s1
+		current = s1.getHead();
+		while(current != null)
+		{
+			current.setHead(s1.getHead());
+			current = s2.getNext();
+		}
+		System.out.println("?");
+		
+		//Distribution de la couleur du head vers tout l'ensemble
+		Color setColor = s1.getHead().getColor();
+		current = s2;
+		
+		while(current != null)
+		{
+			current.setColor(setColor);
+			current = current.getNext();
+		}
+		
+		System.out.println("United ! ");
 	}
 	
 	public boolean isValid(String format, File file)
