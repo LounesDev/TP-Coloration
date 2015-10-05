@@ -5,7 +5,7 @@ public class MAIN {
 	{
 		PictureColoring pc = new PictureColoring();
 		//pc.generate(500, 500, "images/toto.pbm");
-		pc.colorPicture("images/test2.pbm");
+		pc.colorPicture("images/test.pbm");
 		
 	}
 

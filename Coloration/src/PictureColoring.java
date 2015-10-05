@@ -14,6 +14,9 @@ import java.util.regex.Pattern;
 
 public class PictureColoring {
 	
+	double loading = 0;
+	int total;
+	
 	public void trys()
 	{
 		Set s = makeSet(0);
@@ -30,46 +33,49 @@ public class PictureColoring {
 	{
 		try {
 			
-			int[][] pixels = read(path);
-			for (int i = 0; i < pixels.length; i++) {
-				for (int j = 0; j < pixels[0].length; j++) {
-					System.out.print(pixels[i][j]);
-				}
-				System.out.println();
-			}
+			Set[][] pixelsSets = read(path);
 			
-			Set[][] pixelsSets = convertToSets(pixels);
-			
-
 			for (int i = 0; i < pixelsSets.length; i++) {
 				for (int j = 0; j < pixelsSets[0].length; j++) {
 					System.out.print(pixelsSets[i][j]);
 				}
 				System.out.println();
 			}
-			System.out.println();
 			
 			for(int i = 0; i < pixelsSets.length; i++) {
 				for(int j = 0; j < pixelsSets[0].length; j++) {
-					System.out.println("[" + i + "][" + j + "]");
 					if(!pixelsSets[i][j].isBlack())
 					{
 						ArrayList<Set> surroundings = getSurroundings(pixelsSets, i, j);
-						System.out.println(surroundings.size() + " neighbors");
 						for(Set neighbor : surroundings)
 						{	
-							System.out.println(neighbor);
 							if(neighbor != null && !neighbor.isBlack())
 							{
 								if(findSet(pixelsSets[i][j]) != findSet(neighbor))
 								{
-									union(pixelsSets[i][j], neighbor);
+									if(pixelsSets[i][j].getSize() <= neighbor.getSize())
+									{
+										union(pixelsSets[i][j], neighbor);										
+									} else {
+										union(neighbor, pixelsSets[i][j]);
+									}
 								}
 							}
 						}
 					}										
 				}
 			}
+			System.out.println();
+			for (int i = 0; i < pixelsSets.length; i++) {
+				for (int j = 0; j < pixelsSets[0].length; j++) {
+					System.out.print(pixelsSets[i][j]);
+				}
+				System.out.println();
+			}
+			
+			write(pixelsSets, "images/test.ppm");
+			
+			
 			
 			
 		} catch (FileFormatException e) {}
@@ -108,6 +114,7 @@ public class PictureColoring {
 		
 		for (int i = 0; i < sets.length; i++) {
 			for (int j = 0; j < sets[0].length; j++) {
+				System.out.println(i);
 				sets[i][j] = makeSet(pixels[i][j]);
 			}
 		}
@@ -115,7 +122,7 @@ public class PictureColoring {
 		return sets;
 	}
 
-	public int[][] read(String path) throws FileFormatException
+	public Set[][] read(String path) throws FileFormatException
 	{
 		//File variables
 		BufferedReader in = null;
@@ -134,8 +141,10 @@ public class PictureColoring {
 		//Dimensions
 		Dimensions dimensions = getPictureDimensions(pictureFile);
 		
+		total = dimensions.getRows();
+		
 		//Reading and Saving variables
-		int[][] pixels = new int[dimensions.getRows()][dimensions.getColumns()];
+		Set[][] pixels = new Set[dimensions.getRows()][dimensions.getColumns()];
 		String line;
 		int rows = 0;
 		int columns = 0;
@@ -152,17 +161,19 @@ public class PictureColoring {
 			{
 				for(int i = 0; i < line.length(); i++)
 				{
-					pixels[rows][columns] = Character.getNumericValue(line.charAt(i));
+					pixels[rows][columns] = makeSet(Character.getNumericValue(line.charAt(i)));
 					columns++;
 					
 					if(columns == pixels[0].length)
 					{
 						rows++;
 						columns = 0;
+
+						loading = (double) rows/total;
+						System.out.println((loading * 100) + "%");
 					}
 					
 				}
-				
 				
 			}
 			
@@ -175,7 +186,7 @@ public class PictureColoring {
 		return null;
 	}
 	
-	public void write(boolean type, int[][] pixels, String path)
+	public void write(Set[][] pixels, String path)
 	{
 		File picture = new File(path);
 		PrintWriter out = null;
@@ -186,49 +197,34 @@ public class PictureColoring {
 		try {
 			out = new PrintWriter(picture, "UTF-8");
 			
-			if(type) 
-			{
-				out.println("P3");
-				out.println(columns + " " + rows);
-				out.println(maxValue(pixels));
-			} else {
-				out.println("P1");
-				out.println(columns + " " + rows);
-			}
-			
-			
+			out.println("P3");
+			out.println(columns + " " + rows);
+			//out.println(maxValue(pixels));
+			out.println(255);
+						
 			
 			for(int i = 0; i < pixels.length; i++)
 			{
 				for(int j = 0; j < pixels[0].length; j++)
 				{
-					if(!type)
+					int[] colors = pixels[i][j].getColor().getComponents();
+					out.print(colors[0] + " " + colors[1] + " " + colors[2] + " ");
+					cpt++;
+					if(cpt == 3)
 					{
-						out.print(pixels[i][j]);
-						cpt++;
-						if(cpt == 70)
-						{
-							out.println();
-							cpt = 0;
-						}
-					} else {
-						out.print(pixels[i][j] + " ");
-						cpt++;
-						if(cpt == 10)
-						{
-							out.println();
-							cpt = 0;
-						}
+						out.println();
+						cpt = 0;
 					}
 				}
 			}
+			
 			out.close();
 		} catch (FileNotFoundException | UnsupportedEncodingException e) {
 			e.printStackTrace();
 		}
 	}
 	
-	public void generate(int n, int m, String path)
+	public int[][] generate(int n, int m, String path)
 	{
 		int[][] pixels = new int[n][m];
 		Random rand = new Random();
@@ -241,7 +237,7 @@ public class PictureColoring {
 			}
 		}
 		
-		write(false, pixels, path);
+		return pixels;
 		
 	}
 	
@@ -257,38 +253,28 @@ public class PictureColoring {
 	
 	public void union(Set s1, Set s2)
 	{
-		//Lier le tail de s1 vers s2
+		Set newHead = s1.getHead();
+		Set newTail = s2.getTail();
+		
+		int newSize = s1.getSize() + s2.getSize();
+		
+		Color setColor = s1.getHead().getColor();
+		
 		s1.getTail().setNext(s2.getHead());
 		s2.getTail().setNext(null);
 		
-		//Lier tous les tails (de s1) vers le tail de s2
 		Set current = s1.getHead();
-		while(current != null)
-		{
-			current.setTail(s2.getTail());
-			current = current.getNext();
-		}
-		
-		//Lier tous heads (de s2) vers la head de s1
-		current = s1.getHead();
-		while(current != null)
-		{
-			current.setHead(s1.getHead());
-			current = s2.getNext();
-		}
-		System.out.println("?");
-		
-		//Distribution de la couleur du head vers tout l'ensemble
-		Color setColor = s1.getHead().getColor();
-		current = s2;
 		
 		while(current != null)
 		{
+			current.setHead(newHead);
+			current.setTail(newTail);
+			current.setSize(newSize);
 			current.setColor(setColor);
 			current = current.getNext();
 		}
 		
-		System.out.println("United ! ");
+
 	}
 	
 	public boolean isValid(String format, File file)

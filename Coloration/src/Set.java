@@ -3,6 +3,8 @@ public class Set {
 	
 	private int WHITE = 0;
 	private int BLACK = 1;
+	
+	private int size;
 
 	private Color color;
 	
@@ -22,6 +24,7 @@ public class Set {
 		this.head = this;
 		this.next = null;
 		this.tail = this;
+		this.size = 1;
 	}
 	
 	public boolean isBlack()
@@ -51,6 +54,11 @@ public class Set {
 		return tostring;
 	}
 	
+	public void setSize(int s)
+	{
+		this.size = s;
+	}
+	
 	public void setColor(Color c)
 	{
 		this.color = c;
@@ -69,6 +77,11 @@ public class Set {
 	public void setNext(Set n)
 	{
 		this.next = n;
+	}
+	
+	public int getSize()
+	{
+		return this.size;
 	}
 	
 	public Color getColor()
