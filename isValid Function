@@ -1,0 +1,35 @@
+public boolean isValid(String format, File file)
+	{
+		String name = file.getName();
+		String extension = name.substring(name.length() - 3);
+		String line = "";
+		boolean isValid = false;
+		
+		if(!extension.equals(format))
+		{
+			return isValid;
+		}
+		
+		try {
+			BufferedReader buffer = new BufferedReader(new FileReader(file));
+	
+			while((line = buffer.readLine) != null){
+				if(line.charAt(0) != '#'){
+					if(line.matches("^[P][1-6]\\s*([#].*){0,1}")){
+						isValid = true;
+					}
+					else if(line.matches("^\\d*\\s\\d*\\s*([#].*){0,1}") && isValid){
+						return isValid;
+					}
+					else if(!isValid){
+						return false; 
+					}
+				}
+			}
+			
+			
+		} catch (IOException e) {
+			e.printStackTrace();
+		}		
+		return false;
+	}
